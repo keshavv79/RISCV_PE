@@ -15,10 +15,10 @@ module booth_radix4_multiplier_8bit (
  reg signed [32:0] B;
  reg [3:0] count;
 // reg [2:0] group_bits;
-always @(*) begin  // Assuming a start signal for new multiplication
-        A <= multiplicand;
-        B <= {multiplier, 1'b0};
-end
+//always @(*) begin  // Assuming a start signal for new multiplication
+//        A <= multiplicand;
+//        B <= {multiplier, 1'b0};
+//end
  reg index;
  parameter IDLE=0,GROUP=1,ALU=2,DONE=3;
  always@(posedge clk or negedge rst) begin
@@ -54,8 +54,8 @@ end
                3'b000: pp = 32'sd0;
                3'b001: pp = A;
                3'b010: pp = A;
-               3'b011: pp = A <<< 1; // 2*A
-               3'b100: pp = -(A <<< 1); // -2*A
+               3'b011: pp = {A[30:0], 1'b0}; // 2*A
+               3'b100: pp = -{A[30:0], 1'b0}; // -2*A
                3'b101: pp = -A;
                3'b110: pp = -A;
                3'b111: pp = 32'sd0;
@@ -66,7 +66,9 @@ end
         else if(state==ALU) begin
             count=count+1;
           $display(pp);
-          pp=pp<<<2*(count-1);
+         // if(pp!=0) begin
+            pp=pp<<<2*(count-1);
+//            end
           $display(pp);
             B=B>>>2;
             final_sum<=final_sum+pp;
