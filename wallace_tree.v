@@ -1,49 +1,71 @@
-module wallace_tree(
-    input signed [64:0] pp [15:0], // 16 partial products from pp_gen
-    output signed [64:0] final_sum,
-    output signed [64:0] final_carry
+module wallace_tree (
+    input  wire [16*64-1:0] pp_flat,  // 16 partial products, 64-bit each
+    output wire [63:0]      final_sum,
+    output wire [63:0]      final_carry
 );
 
-    // Wires for each level of the tree
-    wire signed [64:0] L1_S [4:0];
-    wire signed [64:0] L1_C [4:0];
-    wire signed [64:0] L2_S [2:0];
-    wire signed [64:0] L2_C [2:0];
-    wire signed [64:0] L3_S [1:0];
-    wire signed [64:0] L3_C [1:0];
-    wire signed [64:0] L4_S [1:0];
-    wire signed [64:0] L4_C [1:0];
-    wire signed [64:0] L5_S [0:0];
-    wire signed [64:0] L5_C [0:0];
+    // Unpack partial products
+    wire [63:0] pp [15:0];
+    genvar i;
+    generate
+        for (i=0; i<16; i=i+1) begin : unpack
+            assign pp[i] = pp_flat[(i+1)*64-1 -: 64];
+        end
+    endgenerate
 
-    // ----- Level 1: Reduce 16 partial products to 11 -----
-    CSA csa1_0(.A(pp[0]), .B(pp[1]), .D(pp[2]), .PS(L1_S[0]), .PC(L1_C[0]));
-    CSA csa1_1(.A(pp[3]), .B(pp[4]), .D(pp[5]), .PS(L1_S[1]), .PC(L1_C[1]));
-    CSA csa1_2(.A(pp[6]), .B(pp[7]), .D(pp[8]), .PS(L1_S[2]), .PC(L1_C[2]));
-    CSA csa1_3(.A(pp[9]), .B(pp[10]), .D(pp[11]), .PS(L1_S[3]), .PC(L1_C[3]));
-    CSA csa1_4(.A(pp[12]), .B(pp[13]), .D(pp[14]), .PS(L1_S[4]), .PC(L1_C[4]));
-    // pp[15] is passed through
-    
-    // ----- Level 2: Reduce 11 rows to 8 -----
-    CSA csa2_0(.A(L1_S[0]), .B(L1_C[0]), .D(L1_S[1]), .PS(L2_S[0]), .PC(L2_C[0]));
-    CSA csa2_1(.A(L1_C[1]), .B(L1_S[2]), .D(L1_C[2]), .PS(L2_S[1]), .PC(L2_C[1]));
-    CSA csa2_2(.A(L1_S[3]), .B(L1_C[3]), .D(L1_S[4]), .PS(L2_S[2]), .PC(L2_C[2]));
-    // L1_C[4] and pp[15] are passed through
-    
-    // ----- Level 3: Reduce 8 rows to 6 -----
-    CSA csa3_0(.A(L2_S[0]), .B(L2_C[0]), .D(L2_S[1]), .PS(L3_S[0]), .PC(L3_C[0]));
-    CSA csa3_1(.A(L2_C[1]), .B(L2_S[2]), .D(L2_C[2]), .PS(L3_S[1]), .PC(L3_C[1]));
-    // L1_C[4] and pp[15] are passed through
-    
-    // ----- Level 4: Reduce 6 rows to 4 -----
-    CSA csa4_0(.A(L3_S[0]), .B(L3_C[0]), .D(L3_S[1]), .PS(L4_S[0]), .PC(L4_C[0]));
-    CSA csa4_1(.A(L3_C[1]), .B(L1_C[4]), .D(pp[15]), .PS(L4_S[1]), .PC(L4_C[1]));
-    
-    // ----- Level 5: Reduce 4 rows to 3 -----
-    CSA csa5_0(.A(L4_S[0]), .B(L4_C[0]), .D(L4_S[1]), .PS(L5_S[0]), .PC(L5_C[0]));
-    // L4_C[1] is passed through
-    
-    // ----- Level 6: Reduce 3 rows to 2 -----
-    CSA csa6_0(.A(L5_S[0]), .B(L5_C[0]), .D(L4_C[1]), .PS(final_sum), .PC(final_carry));
+    // ------------------------
+    // Stage 1: reduce 16 → 11
+    // ------------------------
+    wire [63:0] s1_sum [4:0], s1_carry [4:0];
+    CSA csa1 (pp[0], pp[1], pp[2], s1_sum[0], s1_carry[0]);
+    CSA csa2 (pp[3], pp[4], pp[5], s1_sum[1], s1_carry[1]);
+    CSA csa3 (pp[6], pp[7], pp[8], s1_sum[2], s1_carry[2]);
+    CSA csa4 (pp[9], pp[10], pp[11], s1_sum[3], s1_carry[3]);
+    CSA csa5 (pp[12], pp[13], pp[14], s1_sum[4], s1_carry[4]);
+    wire [63:0] rem1 = pp[15];
+
+    // Total outputs = 5 sums + 5 carries + rem1 = 11 rows
+
+    // ------------------------
+    // Stage 2: reduce 11 → 7
+    // ------------------------
+    wire [63:0] s2_sum [2:0], s2_carry [2:0];
+    CSA csa6 (s1_sum[0], s1_carry[0], s1_sum[1], s2_sum[0], s2_carry[0]);
+    CSA csa7 (s1_carry[1], s1_sum[2], s1_carry[2], s2_sum[1], s2_carry[1]);
+    CSA csa8 (s1_sum[3], s1_carry[3], s1_sum[4], s2_sum[2], s2_carry[2]);
+    // leftovers: s1_carry[4], rem1
+    // total 7 rows
+
+    // ------------------------
+    // Stage 3: reduce 7 → 5
+    // ------------------------
+    wire [63:0] s3_sum [1:0], s3_carry [1:0];
+    CSA csa9  (s2_sum[0], s2_carry[0], s2_sum[1], s3_sum[0], s3_carry[0]);
+    CSA csa10 (s2_carry[1], s2_sum[2], s2_carry[2], s3_sum[1], s3_carry[1]);
+    // leftovers: s1_carry[4], rem1
+    // total 5 rows
+
+    // ------------------------
+    // Stage 4: reduce 5 → 3
+    // ------------------------
+    wire [63:0] s4_sum, s4_carry;
+    CSA csa11 (s3_sum[0], s3_carry[0], s3_sum[1], s4_sum, s4_carry);
+    // leftovers: s3_carry[1], s1_carry[4], rem1
+    // total 3 rows
+
+    // ------------------------
+    // Stage 5: reduce 3 → 2
+    // ------------------------
+    wire [63:0] s5_sum, s5_carry;
+    CSA csa12 (s4_sum, s4_carry, s3_carry[1], s5_sum, s5_carry);
+    // leftovers: s1_carry[4], rem1
+    // total 2 rows
+
+    // ------------------------
+    // Final two rows
+    // ------------------------
+    assign final_sum   = s5_sum   ^ s5_carry ^ s1_carry[4] ^ rem1;
+    assign final_carry = (s5_sum & s5_carry) | (s5_sum & s1_carry[4]) |
+                         (s5_carry & s1_carry[4]) | rem1; // OR optimized adder stage
 
 endmodule

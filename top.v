@@ -1,29 +1,34 @@
-module booth_wallace_multiplier(
-    input signed [31:0] multiplicand,
-    input signed [31:0] multiplier,
-    output signed [63:0] product
+module booth_wallace_multiplier (
+    input  wire signed [31:0] A,
+    input  wire signed [31:0] B,
+    output wire signed [63:0] P
 );
 
-    wire signed [64:0] partial_products [15:0];
-    wire signed [64:0] final_sum_vector;
-    wire signed [64:0] final_carry_vector;
-
-
-    pp_gen pp_gen_inst (
-        .A(multiplicand),
-        .B(multiplier),
-        .pp(partial_products)
+    // --------------------
+    // Step 1: Partial Products
+    // --------------------
+    wire signed [16*64-1:0] pp_flat;
+    pp_gen pp_stage (
+        .A(A),
+        .B(B),
+        .pp_flat(pp_flat)
     );
-    wallace_tree wallace_tree_inst (
-        .pp(partial_products),
-        .final_sum(final_sum_vector),
-        .final_carry(final_carry_vector)
+
+    // --------------------
+    // Step 2: Wallace Tree Reduction
+    // --------------------
+    wire [63:0] final_sum, final_carry;
+    wallace_tree wt_stage (
+        .pp_flat(pp_flat),
+        .final_sum(final_sum),
+        .final_carry(final_carry)
     );
-        wire signed [64:0] final_carry_shifted;
-    assign final_carry_shifted = final_carry_vector << 1;
-    wire [64:0] final_product_untruncated;
 
-    assign final_product_untruncated = final_sum_vector + final_carry_shifted;
+    // --------------------
+    // Step 3: Final CPA
+    // --------------------
+    // Carry must be shifted left by 1!
+assign P = final_sum + (final_carry << 1) + (s1_carry[4] << 1) + rem1;
 
-    assign product = final_product_untruncated[63:0];
-endmodule    
+
+endmodule
