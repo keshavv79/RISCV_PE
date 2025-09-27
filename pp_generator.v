@@ -1,7 +1,7 @@
 module pp_gen (
-    input  wire signed [31:0] A,   // multiplicand
-    input  wire signed [31:0] B,   // multiplier
-    output wire signed [16*64-1:0] pp_flat // 16 partial products, each 64 bits
+    input  wire signed [31:0] A,
+    input  wire signed [31:0] B,
+    output wire signed [16*64-1:0] pp_flat
 );
 
     wire [33:0] B_pad = {B[31], B, 1'b0}; 
@@ -18,8 +18,7 @@ module pp_gen (
             );
         end
     endgenerate
-
-    // Flatten partial products
+   
     assign pp_flat = {pp[15], pp[14], pp[13], pp[12], pp[11], pp[10], pp[9], pp[8],
                       pp[7], pp[6], pp[5], pp[4], pp[3], pp[2], pp[1], pp[0]};
 endmodule

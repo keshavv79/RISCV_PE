@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-
 module tb_booth_wallace_multiplier;
 
     // DUT inputs/outputs
