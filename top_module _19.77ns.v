@@ -14,7 +14,7 @@ module booth_wallace_multiplier_seq(
 
     // Stage 1: Partial Product Generation (combinational)
     wire signed [16*64-1:0] pp_flat_next;
-    pp_gen u_pp (.A(A_reg), .B(B_reg), .pp_flat(pp_flat_next));
+    pp_gen u_pp (.A(A_reg), .B(B_reg), .pp_flat(pp_flat_next));     //19.3ns in OpenLane and 7.8ns in vivado
     
     // Stage 1.5: Register the partial products (NEW PIPELINE STAGE)
     reg signed [16*64-1:0] pp_flat_reg;
