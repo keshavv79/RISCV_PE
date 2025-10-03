@@ -18,7 +18,7 @@ module booth_wallace_multiplier_seq(
         if (rst) begin
             A_reg <= 0;
             B_reg <= 0;
-        end else if (en) begin
+        end else begin
             A_reg <= A;
             B_reg <= B;
         end
@@ -34,7 +34,7 @@ module booth_wallace_multiplier_seq(
     reg signed [16*64-1:0] pp_flat_r;
     always @(posedge clk or posedge rst) begin
         if (rst) pp_flat_r <= 0;
-        else if (en) pp_flat_r <= pp_flat_next;
+        else pp_flat_r <= pp_flat_next;
     end
 
     //-----------------------------------------
@@ -42,6 +42,7 @@ module booth_wallace_multiplier_seq(
     //-----------------------------------------
     wire [63:0] pp [15:0];
     genvar i;
+    //integer j;
     generate
         for (i=0; i<16; i=i+1) begin : unpack
             assign pp[i] = pp_flat_r[(i+1)*64-1 -: 64];
@@ -69,7 +70,7 @@ module booth_wallace_multiplier_seq(
                 s1_carry_r[j] <= 0;
             end
             s1_rem1_r <= 0;
-        end else if (en) begin
+        end else begin
             integer j;
             for (j=0; j<5; j=j+1) begin
                 s1_sum_r[j]   <= s1_sum[j];
@@ -93,15 +94,15 @@ module booth_wallace_multiplier_seq(
     reg [63:0] s2_sum_r[2:0], s2_carry_r[2:0], s2_rem1_r, s2_rem2_r;
     always @(posedge clk or posedge rst) begin
         if (rst) begin
-            integer j;
+          integer j;
             for (j=0; j<3; j=j+1) begin
                 s2_sum_r[j]   <= 0;
                 s2_carry_r[j] <= 0;
             end
             s2_rem1_r <= 0;
             s2_rem2_r <= 0;
-        end else if (en) begin
-            integer j;
+        end else begin
+           integer j;
             for (j=0; j<3; j=j+1) begin
                 s2_sum_r[j]   <= s2_sum[j];
                 s2_carry_r[j] <= s2_carry[j];
@@ -127,7 +128,7 @@ module booth_wallace_multiplier_seq(
             s3_sum_r[0] <= 0; s3_sum_r[1] <= 0;
             s3_carry_r[0] <= 0; s3_carry_r[1] <= 0;
             s3_rem1_r <= 0; s3_rem2_r <= 0;
-        end else if (en) begin
+        end else begin
             s3_sum_r[0] <= s3_sum[0]; s3_sum_r[1] <= s3_sum[1];
             s3_carry_r[0] <= s3_carry[0]; s3_carry_r[1] <= s3_carry[1];
             s3_rem1_r <= s3_rem1; s3_rem2_r <= s3_rem2;
@@ -147,7 +148,7 @@ module booth_wallace_multiplier_seq(
         if (rst) begin
             s4_sum_r[0] <= 0; s4_sum_r[1] <= 0;
             s4_carry_r[0] <= 0; s4_carry_r[1] <= 0;
-        end else if (en) begin
+        end else begin
             s4_sum_r[0] <= s4_sum[0]; s4_sum_r[1] <= s4_sum[1];
             s4_carry_r[0] <= s4_carry[0]; s4_carry_r[1] <= s4_carry[1];
         end
@@ -165,7 +166,7 @@ module booth_wallace_multiplier_seq(
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             s5_sum_r <= 0; s5_carry_r <= 0; s5_rem1_r <= 0;
-        end else if (en) begin
+        end else begin
             s5_sum_r <= s5_sum; s5_carry_r <= s5_carry; s5_rem1_r <= s5_rem1;
         end
     end
@@ -181,7 +182,7 @@ module booth_wallace_multiplier_seq(
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             s6_sum_r <= 0; s6_carry_r <= 0;
-        end else if (en) begin
+        end else begin
             s6_sum_r <= s6_sum; s6_carry_r <= s6_carry;
         end
     end
@@ -195,12 +196,10 @@ module booth_wallace_multiplier_seq(
         if (rst) begin
             P <= 0;
             valid <= 0;
-        end else if (en) begin
+        end else begin
             P <= P_comb;
             valid <= 1;
-        end else begin
-            valid <= 0;
-        end
+            end
     end
 
 endmodule
