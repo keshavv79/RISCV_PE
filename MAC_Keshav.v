@@ -45,17 +45,11 @@ module top(
             end
 
             if (finalize) begin
-                acc_out <= acc_reg;
+                out <= acc_reg;
                 out_valid <= 1;
             end else begin
                 out_valid <= 0;
             end
         end
-    end
-
-    // Optional product debug output
-    always @(posedge clk) begin
-        if (mult_valid)
-            product_out <= product;
     end
 endmodule
