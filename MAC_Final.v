@@ -8,7 +8,8 @@ module top(
     input wire signed [31:0] a,
     input wire signed [31:0] b,
     output reg signed [63:0] out,
-    output reg out_valid
+    output reg out_valid,
+    output reg  signed [63:0] product_out
 );
     wire signed [63:0] product;
     wire mult_valid;
@@ -17,9 +18,9 @@ module top(
         .clk(clk),
         .en(en),
         .rst(rst),
-        .a(a),
-        .b(b),
-        .p(product),
+        .A(a),
+        .B(b),
+        .P(product),
         .valid(mult_valid)
     );
 
@@ -51,5 +52,10 @@ module top(
                 out_valid <= 0;
             end
         end
+    end
+    
+    always @(posedge clk) begin
+        if (mult_valid)
+            product_out <= product;
     end
 endmodule
